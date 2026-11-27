@@ -193,7 +193,7 @@ const L = {
     vinile:[ {id:'normale',n:'Vinile normale',p:1.50}, {id:'rainbow',n:'Vinile Rainbow',p:2.40},
              {id:'trasp',n:'Vinile trasparente',p:2.40}, {id:'fluo',n:'Vinile Fluo',p:6.00} ],
     lamina:[ {id:'',n:'Nessuna',p:0}, {id:'trasp',n:'Lamina trasparente',p:1.50}, {id:'holo',n:'Lamina Holo',p:2.00} ],
-    extra: [ {id:'resina',n:'Resinatura',p:6.00}, {id:'full',n:'Foglio full color',p:1.00} ] },
+    extra: [ {id:'resina',n:'Resinatura',p:6.00}, {id:'full',n:'FOGLIO full color',p:1.00} ] },
   intaglio: { foglio:'30×30 cm',
     mat:[ {id:'termo',n:'Termoadesivo (magliette)',p:6.00}, {id:'presp',n:'Vinile prespaziato',p:5.00},
           {id:'notr',n:'Vinile adesivo senza transfer',p:3.00} ] },
@@ -245,7 +245,8 @@ function leggi(){
     const l = L.stampa.lamina.find(o=>o.id===document.querySelector('[name=lamina]:checked').value);
     const ex = [...document.querySelectorAll('[name=extra]:checked')].map(i=>L.stampa.extra.find(o=>o.id===i.value));
     r.righe = [v, ...(l.p?[l]:[]), ...ex].map(o=>({n:o.n,p:o.p}));
-    r.titolo = v.n + (l.p?' + '+l.n.toLowerCase():'') + ex.map(e=>' + '+e.n.toLowerCase()).join('');
+    const lc = s => /^[A-Z][a-z]/.test(s) ? s[0].toLowerCase()+s.slice(1) : s; // lascia le parole in maiuscolo
+    r.titolo = v.n + (l.p?' + '+lc(l.n):'') + ex.map(e=>' + '+lc(e.n)).join('');
   } else {
     const m = L.intaglio.mat.find(o=>o.id===document.querySelector('[name=mat]:checked').value);
     r.righe = [{n:m.n,p:m.p}]; r.titolo = m.n+' intagliato';
