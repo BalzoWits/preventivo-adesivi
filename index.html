@@ -198,12 +198,13 @@ const L = {
     mat:[ {id:'termo',n:'Termoadesivo (magliette)',p:6.00}, {id:'presp',n:'Vinile prespaziato',p:5.00},
           {id:'notr',n:'Vinile adesivo senza transfer',p:3.00} ] },
 };
+// progetto Firebase condiviso con Officina/Pianta/Orizzonte: i preventivi stanno in users/<uid>/preventivi
 const firebaseConfig = {
-  apiKey: "AIzaSyD0ZPLGKREgrmjTEKwb7WcKUL9hHnc6WX4",
-  authDomain: "carte-infami.firebaseapp.com",
-  databaseURL: "https://carte-infami-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "carte-infami",
-  appId: "1:259540586786:web:48a492cc19e6db61cb557b",
+  apiKey: "AIzaSyAL-1FJzLz0u3tZybk4SQiA_9cOJT3-MSg",
+  authDomain: "officina-dee34.firebaseapp.com",
+  databaseURL: "https://officina-dee34-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "officina-dee34",
+  appId: "1:1067111827646:web:22600688832cc5d80cf6ef",
 };
 
 const $ = id => document.getElementById(id);
@@ -322,7 +323,7 @@ async function initFirebase(){
       if (stop){ stop(); stop=null; }
       fb.salvati=[];
       if (fb.user){
-        stop = db.onValue(db.ref(FB.db, `preventivi/${fb.user.uid}`), s=>{
+        stop = db.onValue(db.ref(FB.db, `users/${fb.user.uid}/preventivi`), s=>{
           const v = s.val()||{};
           fb.salvati = Object.entries(v).map(([id,p])=>({id,...p})).sort((x,y)=>(y.aggiornato||0)-(x.aggiornato||0));
           disegnaSalvati();
@@ -361,8 +362,8 @@ $('save').onclick=async()=>{
   const {ref,set,push} = FB.D;
   const dati = { nome: $('prev-nome').value.trim(), items: bozza.items, totale: Math.round(totale()*100)/100, aggiornato: Date.now() };
   try{
-    if (bozza.id) await set(ref(FB.db, `preventivi/${fb.user.uid}/${bozza.id}`), dati);
-    else { const r = push(ref(FB.db, `preventivi/${fb.user.uid}`)); await set(r, dati); bozza.id = r.key; }
+    if (bozza.id) await set(ref(FB.db, `users/${fb.user.uid}/preventivi/${bozza.id}`), dati);
+    else { const r = push(ref(FB.db, `users/${fb.user.uid}/preventivi`)); await set(r, dati); bozza.id = r.key; }
     bozza.nome = dati.nome; disegnaBozza(); toast('Preventivo salvato');
   }catch(e){ console.error(e); toast('Salvataggio negato: controlla le regole del database'); }
 };
@@ -372,7 +373,7 @@ $('saved').onclick=e=>{
   if (d){
     const id=d.dataset.del;
     if (delArmato!==id){ delArmato=id; d.textContent='Elimina?'; d.style.fontSize='13px'; setTimeout(()=>{ if(delArmato===id){delArmato=null; disegnaSalvati();} },2500); return; }
-    delArmato=null; FB.D.remove(FB.D.ref(FB.db, `preventivi/${fb.user.uid}/${id}`));
+    delArmato=null; FB.D.remove(FB.D.ref(FB.db, `users/${fb.user.uid}/preventivi/${id}`));
     if (bozza.id===id){ bozza.id=null; disegnaBozza(); }
     toast('Preventivo eliminato'); return;
   }
