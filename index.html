@@ -132,7 +132,8 @@ details.listino td{padding:2px 14px 2px 0}
     <ul class="items" id="items" style="margin-top:6px"></ul>
     <div class="total"><span>Totale <small id="tot-sub"></small></span><span id="tot">0,00 €</span></div>
     <div class="actions">
-      <button class="primary" id="save">Salva</button>
+      <button class="primary" id="send">Invia preventivo</button>
+      <button class="ghost" id="save">Salva</button>
       <button class="ghost" id="copy">Copia testo</button>
       <button class="ghost" id="clear">Nuovo</button>
     </div>
@@ -279,6 +280,7 @@ function disegnaBozza(){
   $('prev-nome').value = bozza.nome||'';
   $('prev-title').textContent = bozza.id ? 'Preventivo salvato' : 'Preventivo';
   $('copy').disabled = !bozza.items.length;
+  $('send').disabled = !bozza.items.length;
   $('save').textContent = bozza.id ? 'Aggiorna' : 'Salva';
   $('save').disabled = !bozza.items.length || !fb.user;
   $('save-hint').textContent = fb.user ? '' : (fb.ok ? 'Accedi con Google per salvare i preventivi.' : '');
@@ -607,14 +609,10 @@ $('pg-prev').onclick=()=>{ if(pagina>0){pagina--;drawSheet();} };
 $('pg-next').onclick=()=>{ if(pagina<layout.pages.length-1){pagina++;drawSheet();} };
 window.addEventListener('resize', ()=>{ if(!$('view-fogli').hidden) drawSheet(); });
 
-$('pdf').onclick=async()=>{
-  const btn=$('pdf'); btn.disabled=true; btn.textContent='Preparo il PDF…';
-  await new Promise(r=>setTimeout(r,30));
-  try{
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({unit:'mm', format:'a4', orientation:'portrait', compress:true});
+// aggiunge i fogli di stampa al PDF (nuovaPagina=true se il documento ha già pagine)
+function aggiungiFogli(doc, nuovaPagina){
     layout.pages.forEach((pg,i)=>{
-      if (i) doc.addPage();
+      if (i || nuovaPagina) doc.addPage();
       for (const p of pg.placed){
         const r=p.it.render, off=r.padMm;
         if (p.rot){ r.urlRot ||= ruotato(r).toDataURL('image/png'); }
@@ -623,10 +621,66 @@ $('pdf').onclick=async()=>{
         doc.addImage(p.rot?r.urlRot:r.url, 'PNG', p.x-off, p.y-off, w, h, p.it.id+(p.rot?'r':'')+'_'+p.it.hCm, 'FAST');
       }
     });
+}
+$('pdf').onclick=async()=>{
+  const btn=$('pdf'); btn.disabled=true; btn.textContent='Preparo il PDF…';
+  await new Promise(r=>setTimeout(r,30));
+  try{
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({unit:'mm', format:'a4', orientation:'portrait', compress:true});
+    aggiungiFogli(doc, false);
     const nome = files.length===1 ? files[0].name.replace(/\.[^.]+$/,'') : 'adesivi';
     doc.save(`${nome}_A4.pdf`);
   }catch(e){ console.error(e); toast('PDF non riuscito'); }
   btn.disabled=false; btn.textContent='Scarica PDF';
+};
+// ===================== PREVENTIVO IN PDF (riepilogo + fogli di stampa) =====================
+function pdfPreventivo(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'mm', format:'a4', orientation:'portrait', compress:true});
+  const nome = $('prev-nome').value.trim(), oggi = new Date().toLocaleDateString('it-IT');
+  const X=20, R=190; let y=26;
+  doc.setFont('helvetica','bold'); doc.setFontSize(20); doc.text('Preventivo adesivi', X, y);
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(110); doc.text(oggi, R, y, {align:'right'});
+  y+=8; if (nome){ doc.setFontSize(12); doc.setTextColor(40); doc.text(nome, X, y); y+=6; }
+  y+=4; doc.setDrawColor(220); doc.line(X,y,R,y); y+=9;
+  for (const r of bozza.items){
+    if (y>260){ doc.addPage(); y=24; }
+    doc.setTextColor(30); doc.setFont('helvetica','bold'); doc.setFontSize(11.5);
+    const tit = doc.splitTextToSize(r.titolo, 135); doc.text(tit, X, y);
+    doc.text(eur(r.totale), R, y, {align:'right'});
+    y += tit.length*5.2;
+    doc.setFont('helvetica','normal'); doc.setFontSize(9.5); doc.setTextColor(110);
+    const det = doc.splitTextToSize(dettaglio(r) + ' (' + r.righe.map(o=>`${o.n} ${eur(o.p)}`).join(' + ') + ')' + (r.nota?' · '+r.nota:''), 150);
+    doc.text(det, X, y); y += det.length*4.4 + 5;
+  }
+  doc.setDrawColor(220); doc.line(X,y-2,R,y-2); y+=6;
+  doc.setTextColor(20); doc.setFont('helvetica','bold'); doc.setFontSize(15);
+  doc.text('Totale', X, y); doc.text(eur(totale()), R, y, {align:'right'});
+  const nf = layout.pages.length;
+  if (nf){
+    y+=12; doc.setFont('helvetica','normal'); doc.setFontSize(9.5); doc.setTextColor(110);
+    doc.text(doc.splitTextToSize(`In allegato ${nf} ${nf===1?'foglio':'fogli'} di stampa A4 (pagine successive): stampare al 100% / dimensioni effettive. File: ${files.map(f=>f.name).join(', ')}.`, R-X), X, y);
+    aggiungiFogli(doc, true);
+  }
+  return doc;
+}
+$('send').onclick=async()=>{
+  const btn=$('send'); btn.disabled=true; btn.textContent='Preparo il PDF…';
+  await new Promise(r=>setTimeout(r,30));
+  try{
+    files.forEach(f=>{ if(!f.render) renderAdesivo(f); });
+    const doc = pdfPreventivo();
+    const nomeFile = 'Preventivo adesivi' + ($('prev-nome').value.trim() ? ' - '+$('prev-nome').value.trim().replace(/[\\/:*?"<>|]/g,'') : '') + '.pdf';
+    const file = new File([doc.output('blob')], nomeFile, {type:'application/pdf'});
+    let condiviso=false;
+    if (navigator.canShare && navigator.canShare({files:[file]})){
+      try{ await navigator.share({files:[file], title:'Preventivo adesivi'}); condiviso=true; }
+      catch(e){ if (e.name==='AbortError') condiviso=true; }   // annullato dall'utente: niente download
+    }
+    if (!condiviso) doc.save(nomeFile);
+  }catch(e){ console.error(e); toast('PDF non riuscito'); }
+  btn.disabled=!bozza.items.length; btn.textContent='Invia preventivo';
 };
 $('to-prev').onclick=()=>{
   $('n-fogli').value = layout.pages.length;
