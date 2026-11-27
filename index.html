@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Preventivo Adesivi</title>
+<meta name="description" content="Calcola il prezzo di adesivi in vinile stampati (fogli A4) e intagliati (fogli 30×30) dal listino, e copia il preventivo da mandare.">
+<meta name="theme-color" content="#e8466b">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M10 10h44v28L38 54H10z' fill='%23ffd23f' stroke='%231d2433' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M54 38H38v16' fill='%23fff' stroke='%231d2433' stroke-width='4' stroke-linejoin='round'/%3E%3Ctext x='29' y='35' font-family='Arial' font-weight='700' font-size='20' text-anchor='middle' fill='%23e8466b'%3E€%3C/text%3E%3C/svg%3E">
+<script src="/torna.js" defer></script>
+<style>
+:root{--bg:#f4f1ec;--panel:#fff;--ink:#1d2433;--muted:#6b7280;--line:#e2ddd5;--accent:#e8466b;--accent-soft:#fde8ee;--ok:#1f8a5b}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.45 system-ui,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);padding:0 16px env(safe-area-inset-bottom,0)}
+.wrap{max-width:980px;margin:0 auto;padding-block:20px 60px}
+header h1{margin:0;font-size:24px;letter-spacing:-.01em}
+header p{margin:4px 0 0;color:var(--muted)}
+.grid{display:grid;grid-template-columns:1.15fr 1fr;gap:18px;margin-top:18px;align-items:start}
+@media (max-width:760px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+.card h2{font-size:16px;margin:0 0 12px}
+.tabs{display:flex;gap:4px;background:#efeae2;border-radius:10px;padding:3px;margin-bottom:14px}
+.tabs button{flex:1;border:0;background:transparent;padding:8px 6px;border-radius:8px;font:inherit;cursor:pointer;color:var(--muted)}
+.tabs button.on{background:#fff;color:var(--ink);font-weight:600;box-shadow:0 1px 2px #0001}
+fieldset{border:0;padding:0;margin:0 0 14px}
+legend{font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:6px;padding:0}
+.opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px}
+.opt{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;cursor:pointer;user-select:none}
+.opt:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.opt input{accent-color:var(--accent);margin:0}
+.opt span{flex:1}
+.opt b{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+label.f{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--muted)}
+input[type=number],input[type=text]{font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:8px;width:100px;color:var(--ink);background:#fff}
+input[type=text]{width:100%}
+.note{font-size:13px;color:var(--muted);margin:6px 0 0}
+.calc{margin-top:14px;border-top:1px dashed var(--line);padding-top:12px}
+.calc table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.calc td{padding:2px 0}
+.calc td:last-child{text-align:right}
+.calc tr.tot td{font-weight:700;font-size:17px;padding-top:6px}
+button.primary{width:100%;margin-top:12px;border:0;background:var(--accent);color:#fff;font:inherit;font-weight:600;padding:11px;border-radius:10px;cursor:pointer}
+button.primary:disabled{opacity:.45;cursor:default}
+button.ghost{border:1px solid var(--line);background:#fff;font:inherit;padding:7px 12px;border-radius:8px;cursor:pointer;color:var(--ink)}
+.items{list-style:none;margin:0;padding:0}
+.items li{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}
+.items li div{flex:1;min-width:0}
+.items .t{font-weight:600}
+.items .d{font-size:13px;color:var(--muted)}
+.items .p{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.items .x{border:0;background:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 2px;line-height:1}
+.empty{color:var(--muted);text-align:center;padding:24px 0}
+.total{display:flex;justify-content:space-between;align-items:baseline;margin-top:12px;font-size:22px;font-weight:700}
+.total small{font-size:13px;font-weight:400;color:var(--muted)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.actions .primary{flex:1;width:auto;margin:0}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.on{opacity:1}
+details.listino{margin-top:18px}
+details.listino summary{cursor:pointer;font-weight:600}
+details.listino table{border-collapse:collapse;margin-top:8px;font-variant-numeric:tabular-nums}
+details.listino td{padding:2px 14px 2px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Preventivo adesivi</h1>
+  <p>Componi le voci, il totale si aggiorna da solo. Prezzi da listino.</p>
+</header>
+
+<div class="grid">
+  <section class="card">
+    <h2>Nuova voce</h2>
+    <div class="tabs" role="tablist">
+      <button type="button" data-tipo="stampa" class="on">Stampati · foglio A4</button>
+      <button type="button" data-tipo="intaglio">Vinile colorato · 30×30</button>
+    </div>
+
+    <div id="pnl-stampa">
+      <fieldset><legend>Vinile</legend><div class="opts" id="o-vinile"></div></fieldset>
+      <fieldset><legend>Lamina</legend><div class="opts" id="o-lamina"></div></fieldset>
+      <fieldset><legend>Extra</legend><div class="opts" id="o-extra"></div></fieldset>
+    </div>
+    <div id="pnl-intaglio" hidden>
+      <fieldset><legend>Materiale</legend><div class="opts" id="o-mat"></div></fieldset>
+    </div>
+
+    <fieldset>
+      <legend>Quantità</legend>
+      <div class="tabs" id="qmode" style="max-width:280px">
+        <button type="button" data-q="adesivi" class="on">Adesivi</button>
+        <button type="button" data-q="fogli">Fogli</button>
+      </div>
+      <div class="row" id="q-adesivi">
+        <label class="f">N. adesivi<input type="number" id="n-adesivi" min="1" value="15"></label>
+        <label class="f">Larghezza cm<input type="number" id="w" min="0.5" step="0.5" value="5"></label>
+        <label class="f">Altezza cm<input type="number" id="h" min="0.5" step="0.5" value="5"></label>
+        <label class="f">Per foglio<input type="number" id="perfoglio" min="1" value="15"></label>
+      </div>
+      <p class="note" id="note-adesivi"></p>
+      <div class="row" id="q-fogli" hidden>
+        <label class="f">N. fogli<input type="number" id="n-fogli" min="1" value="1"></label>
+      </div>
+    </fieldset>
+
+    <label class="f">Nota (facoltativa)<input type="text" id="nota" placeholder="es. logo negozio, adesivi gatto…"></label>
+
+    <div class="calc"><table id="calc"></table></div>
+    <button class="primary" id="add">Aggiungi al preventivo</button>
+  </section>
+
+  <section class="card">
+    <h2>Preventivo</h2>
+    <ul class="items" id="items"></ul>
+    <div class="total"><span>Totale <small id="tot-sub"></small></span><span id="tot">0,00 €</span></div>
+    <div class="actions">
+      <button class="primary" id="copy">Copia testo</button>
+      <button class="ghost" id="clear">Svuota</button>
+    </div>
+
+    <details class="listino">
+      <summary>Listino usato</summary>
+      <div id="listino"></div>
+    </details>
+  </section>
+</div>
+</div>
+<div id="toast"></div>
+
+<script>
+// ===== LISTINO (modificare qui i prezzi) =====
+const L = {
+  stampa: {
+    foglio: 'A4', W: 21, H: 29.7,
+    vinile: [
+      {id:'normale', n:'Vinile normale', p:1.50},
+      {id:'rainbow', n:'Vinile Rainbow', p:2.40},
+      {id:'trasp', n:'Vinile trasparente', p:2.40},
+      {id:'fluo', n:'Vinile Fluo', p:6.00},
+    ],
+    lamina: [
+      {id:'', n:'Nessuna', p:0},
+      {id:'trasp', n:'Lamina trasparente', p:1.50},
+      {id:'holo', n:'Lamina Holo', p:2.00},
+    ],
+    extra: [
+      {id:'resina', n:'Resinatura', p:6.00},
+      {id:'full', n:'Full color', p:1.00},
+    ],
+  },
+  intaglio: {
+    foglio: '30×30 cm', W: 30, H: 30,
+    mat: [
+      {id:'termo', n:'Termoadesivo (magliette)', p:6.00},
+      {id:'presp', n:'Vinile prespaziato', p:5.00},
+      {id:'notr', n:'Vinile adesivo senza transfer', p:3.00},
+    ],
+  },
+};
+const MARGINE = 1, GAP = 0.3; // cm: bordo foglio e spazio fra adesivi per la stima
+
+const $ = id => document.getElementById(id);
+const eur = v => v.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €';
+const store = { get(){ try{ return JSON.parse(localStorage.getItem('prevAdesivi')||'[]'); }catch{ return []; } },
+                set(v){ try{ localStorage.setItem('prevAdesivi', JSON.stringify(v)); }catch{} } };
+
+let tipo = 'stampa', qmode = 'adesivi', perFoglioManuale = false;
+let items = store.get();
+
+function opts(el, list, name, type, checkedId){
+  $(el).innerHTML = list.map(o => `<label class="opt"><input type="${type}" name="${name}" value="${o.id}" ${o.id===checkedId?'checked':''}><span>${o.n}</span><b>${o.p? '+'+eur(o.p).replace(' €','€'):''}</b></label>`).join('');
+}
+opts('o-vinile', L.stampa.vinile, 'vinile', 'radio', 'normale');
+opts('o-lamina', L.stampa.lamina, 'lamina', 'radio', '');
+opts('o-extra', L.stampa.extra, 'extra', 'checkbox', null);
+opts('o-mat', L.intaglio.mat, 'mat', 'radio', 'termo');
+document.querySelectorAll('#o-vinile b, #o-mat b').forEach(b => b.textContent = b.textContent.replace('+',''));
+
+// listino in fondo
+$('listino').innerHTML =
+  `<table><tr><td colspan=2><b>Stampati, al foglio A4</b> (~15 adesivi medi)</td></tr>` +
+  [...L.stampa.vinile, ...L.stampa.lamina.filter(o=>o.p), ...L.stampa.extra].map(o=>`<tr><td>${o.n}</td><td>${eur(o.p)}</td></tr>`).join('') +
+  `<tr><td colspan=2 style="padding-top:8px"><b>Vinile colorato intagliato, al foglio 30×30</b></td></tr>` +
+  L.intaglio.mat.map(o=>`<tr><td>${o.n}</td><td>${eur(o.p)}</td></tr>`).join('') + `</table>`;
+
+function stima(){
+  const f = L[tipo], w = +$('w').value, h = +$('h').value;
+  if (!(w>0 && h>0)) return 0;
+  const fit = (a,b) => Math.floor((f.W - MARGINE + GAP)/(a+GAP)) * Math.floor((f.H - MARGINE + GAP)/(b+GAP));
+  return Math.max(fit(w,h), fit(h,w));
+}
+
+function leggi(){
+  const r = { tipo, righe: [] };
+  if (tipo === 'stampa'){
+    const v = L.stampa.vinile.find(o=>o.id===document.querySelector('[name=vinile]:checked').value);
+    const l = L.stampa.lamina.find(o=>o.id===document.querySelector('[name=lamina]:checked').value);
+    const ex = [...document.querySelectorAll('[name=extra]:checked')].map(i=>L.stampa.extra.find(o=>o.id===i.value));
+    r.righe = [v, ...(l.p?[l]:[]), ...ex];
+    r.titolo = v.n + (l.p ? ' + ' + l.n.toLowerCase() : '') + ex.map(e=>' + '+e.n.toLowerCase()).join('');
+  } else {
+    const m = L.intaglio.mat.find(o=>o.id===document.querySelector('[name=mat]:checked').value);
+    r.righe = [m]; r.titolo = m.n + ' intagliato';
+  }
+  r.prezzoFoglio = r.righe.reduce((s,o)=>s+o.p,0);
+  if (qmode === 'adesivi'){
+    r.adesivi = Math.max(0, Math.floor(+$('n-adesivi').value||0));
+    r.perFoglio = Math.max(1, Math.floor(+$('perfoglio').value||1));
+    r.misura = `${$('w').value}×${$('h').value} cm`;
+    r.fogli = Math.ceil(r.adesivi / r.perFoglio);
+  } else {
+    r.fogli = Math.max(0, Math.floor(+$('n-fogli').value||0));
+  }
+  r.totale = Math.round(r.prezzoFoglio * r.fogli * 100)/100;
+  r.nota = $('nota').value.trim();
+  r.formato = L[tipo].foglio;
+  return r;
+}
+
+function aggiorna(){
+  $('pnl-stampa').hidden = tipo!=='stampa';
+  $('pnl-intaglio').hidden = tipo!=='intaglio';
+  $('q-adesivi').hidden = qmode!=='adesivi';
+  $('q-fogli').hidden = qmode!=='fogli';
+  $('note-adesivi').hidden = qmode!=='adesivi';
+  const s = stima();
+  if (!perFoglioManuale && s) $('perfoglio').value = s;
+  if (qmode==='adesivi'){
+    $('note-adesivi').textContent = s
+      ? `Stima: ${s} adesivi da ${$('w').value}×${$('h').value} cm in un foglio ${L[tipo].foglio}` + (perFoglioManuale && +$('perfoglio').value!==s ? ' (hai messo un valore diverso a mano)' : '') + '.'
+      : 'Misura troppo grande per il foglio.';
+  }
+  const r = leggi();
+  $('calc').innerHTML =
+    r.righe.map(o=>`<tr><td>${o.n}</td><td>${eur(o.p)}</td></tr>`).join('') +
+    `<tr><td><b>Prezzo a foglio ${r.formato}</b></td><td><b>${eur(r.prezzoFoglio)}</b></td></tr>` +
+    `<tr><td>× ${r.fogli} ${r.fogli===1?'foglio':'fogli'}${r.adesivi?` (${r.adesivi} adesivi, ${r.perFoglio} a foglio)`:''}</td><td></td></tr>` +
+    `<tr class="tot"><td>Totale voce</td><td>${eur(r.totale)}</td></tr>`;
+  $('add').disabled = !(r.fogli>0);
+}
+
+function disegnaLista(){
+  $('items').innerHTML = items.length ? items.map((r,i)=>`<li><div><div class="t">${esc(r.titolo)}</div><div class="d">${dettaglio(r)}${r.nota?' · '+esc(r.nota):''}</div></div><span class="p">${eur(r.totale)}</span><button class="x" title="Togli" data-i="${i}">×</button></li>`).join('')
+    : '<li class="empty">Nessuna voce. Aggiungine una a sinistra.</li>';
+  const tot = items.reduce((s,r)=>s+r.totale,0);
+  const fogli = items.reduce((s,r)=>s+r.fogli,0);
+  $('tot').textContent = eur(tot);
+  $('tot-sub').textContent = items.length ? `${fogli} ${fogli===1?'foglio':'fogli'}` : '';
+  $('copy').disabled = !items.length;
+  store.set(items);
+}
+const esc = s => s.replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const dettaglio = r => `${r.fogli} ${r.fogli===1?'foglio':'fogli'} ${r.formato} × ${eur(r.prezzoFoglio)}` + (r.adesivi ? ` · ${r.adesivi} adesivi ${r.misura}` : '');
+
+// eventi
+document.querySelectorAll('.tabs [data-tipo]').forEach(b=>b.onclick=()=>{
+  tipo=b.dataset.tipo; document.querySelectorAll('[data-tipo]').forEach(x=>x.classList.toggle('on',x===b));
+  perFoglioManuale=false; aggiorna();
+});
+document.querySelectorAll('#qmode [data-q]').forEach(b=>b.onclick=()=>{
+  qmode=b.dataset.q; document.querySelectorAll('[data-q]').forEach(x=>x.classList.toggle('on',x===b)); aggiorna();
+});
+$('perfoglio').addEventListener('input',()=>{ perFoglioManuale=true; });
+$('w').addEventListener('input',()=>{ perFoglioManuale=false; });
+$('h').addEventListener('input',()=>{ perFoglioManuale=false; });
+document.querySelector('.grid section').addEventListener('input', aggiorna);
+document.querySelector('.grid section').addEventListener('change', aggiorna);
+$('add').onclick=()=>{ items.push(leggi()); $('nota').value=''; disegnaLista(); toast('Voce aggiunta'); };
+$('items').onclick=e=>{ const b=e.target.closest('.x'); if(!b) return; items.splice(+b.dataset.i,1); disegnaLista(); };
+let svuotaArmato=false;
+$('clear').onclick=()=>{
+  if(!items.length) return;
+  if(!svuotaArmato){ svuotaArmato=true; $('clear').textContent='Sicuro?'; setTimeout(()=>{svuotaArmato=false;$('clear').textContent='Svuota';},2500); return; }
+  items=[]; svuotaArmato=false; $('clear').textContent='Svuota'; disegnaLista();
+};
+$('copy').onclick=async()=>{
+  const txt = 'Preventivo adesivi\n\n' + items.map(r=>`• ${r.titolo}${r.nota?' ('+r.nota+')':''}\n  ${dettaglio(r)} = ${eur(r.totale)}`).join('\n') +
+    `\n\nTotale: ${eur(items.reduce((s,r)=>s+r.totale,0))}`;
+  try{ await navigator.clipboard.writeText(txt); toast('Testo copiato'); }
+  catch{ const t=document.createElement('textarea'); t.value=txt; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); toast('Testo copiato'); }
+};
+let tt; function toast(m){ $('toast').textContent=m; $('toast').classList.add('on'); clearTimeout(tt); tt=setTimeout(()=>$('toast').classList.remove('on'),1600); }
+
+aggiorna(); disegnaLista();
+</script>
+</body>
+</html>
